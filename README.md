@@ -8,27 +8,18 @@ A simple habit tracker built as a monorepo with:
 
 ## Environment
 
-You can place env files in either the app folders or the repo root:
+Copy the provided examples into real env files if you are starting fresh:
 
-- frontend: `apps/web/.env.local` or repo-root `.env.local`
-- backend: `apps/api/.env`
+- `apps/web/.env.local`
+- `apps/api/.env`
 
-## Running locally
-
-### Frontend
+## Scripts
 
 ```bash
-cd apps/web
 npm install
-npm run dev
+npm run dev:web
+npm run dev:api
+npm run build
 ```
 
-### Backend
-
-```bash
-cd apps/api
-npm install
-npm run dev
-```
-
-If you want to run the backend directly with modern Node.js, `node src/index.ts` now works too, but `npm run dev` is still the recommended command during development.
+The frontend expects the API at `http://localhost:5000/api`.

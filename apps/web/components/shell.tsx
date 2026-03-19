@@ -1,16 +1,14 @@
 'use client';
 
 import Link from 'next/link';
-import { ReactNode, useEffect, useMemo, useState } from 'react';
+import { ReactNode, useEffect, useState } from 'react';
 import { usePathname, useRouter } from 'next/navigation';
-import type { Session } from '@supabase/supabase-js';
+import { Session } from '@supabase/supabase-js';
 import { supabase } from '@/lib/supabase';
 
 type ShellProps = {
   children: ReactNode;
 };
-
-const authRoutes = ['/login', '/signup', '/forgot-password', '/reset-password'];
 
 export function Shell({ children }: ShellProps) {
   const pathname = usePathname();
@@ -42,14 +40,14 @@ export function Shell({ children }: ShellProps) {
     };
   }, []);
 
-  const isAuthRoute = useMemo(() => authRoutes.includes(pathname), [pathname]);
-
   useEffect(() => {
     if (!ready) {
       return;
     }
 
-    if (!session && !isAuthRoute) {
+    const authRoute = ['/login', '/signup', '/forgot-password', '/reset-password'].includes(pathname);
+
+    if (!session && !authRoute) {
       router.push('/login');
       return;
     }
@@ -57,22 +55,14 @@ export function Shell({ children }: ShellProps) {
     if (session && (pathname === '/' || pathname === '/login' || pathname === '/signup')) {
       router.push('/habits');
     }
-  }, [isAuthRoute, pathname, ready, router, session]);
+  }, [pathname, ready, router, session]);
 
   async function handleLogout() {
     await supabase.auth.signOut();
     router.push('/login');
   }
 
-  if (isAuthRoute) {
-    return (
-      <div className="min-h-screen bg-[#050505] text-[#f6efe6]">
-        <main className="mx-auto flex min-h-screen w-full max-w-md items-center px-6 py-10 sm:px-8">
-          {ready ? children : <div className="w-full rounded-3xl border border-white/10 bg-[#0d0d0d] p-8 text-center text-sm text-[#d2c1ab]">Loading...</div>}
-        </main>
-      </div>
-    );
-  }
+  const showNav = Boolean(session);
 
   return (
     <div className="app-shell">
@@ -83,7 +73,7 @@ export function Shell({ children }: ShellProps) {
           </Link>
           <p className="muted small">Minimal habit tracking with a streak-loving sidekick.</p>
         </div>
-        {session ? (
+        {showNav ? (
           <nav className="nav">
             <Link href="/habits">Habits</Link>
             <Link href="/habits/new">New habit</Link>
