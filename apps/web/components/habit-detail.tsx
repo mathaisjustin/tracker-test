@@ -1,11 +1,21 @@
 'use client';
 
 import { FormEvent, useEffect, useState } from 'react';
+import {
+  BestWorstDays,
+  Heatmap,
+  MetricCards,
+  MonthCalendar,
+  ProgressRows,
+  type AnalyticsCalendarDay,
+  type AnalyticsHeatmapWeek,
+} from '@/components/analytics-widgets';
 import { apiFetch } from '@/lib/api';
 import { Habit, HabitEntry } from '@/lib/types';
 
 type HabitDetailResponse = {
   habit: Habit;
+  todayEntry: HabitEntry | null;
   entries: HabitEntry[];
   stats: {
     totalEntries: number;
@@ -14,6 +24,24 @@ type HabitDetailResponse = {
     currentStreak: number;
     bestStreak: number;
     lastEntryDate: string | null;
+    completionRate: number;
+    goalDays: number;
+    activeDays: number;
+    currentCost: number;
+    currentQuantity: number;
+  };
+  analytics: {
+    monthLabel: string;
+    progress: {
+      current: number;
+      limit: number | null;
+      percentage: number | null;
+      text: string | null;
+      goalMet: boolean;
+    };
+    calendar: AnalyticsCalendarDay[];
+    monthlyBreakdown: Array<{ label: string; value: string; percentage: number; tone?: string }>;
+    heatmap: AnalyticsHeatmapWeek[];
   };
 };
 
@@ -75,6 +103,15 @@ export function HabitDetail({ habitId }: { habitId: string }) {
     return <div className="card">Habit not found.</div>;
   }
 
+  const topCards = [
+    { label: 'Best streak', value: `${data.stats.bestStreak}`, note: 'days' },
+    { label: 'Current streak', value: `${data.stats.currentStreak}`, note: 'running now' },
+    { label: 'Completion', value: `${data.stats.completionRate}%`, note: 'this month' },
+    { label: 'Current cost', value: `$${data.stats.currentCost.toFixed(2)}`, note: 'today' },
+  ];
+
+  const calendarTitle = data.habit.daily_limit ? `Progress / goal (${data.analytics.progress.text ?? 'n/a'})` : 'Current month';
+
   return (
     <section className="stack-lg">
       <div className="card hero-card">
@@ -88,31 +125,21 @@ export function HabitDetail({ habitId }: { habitId: string }) {
               </p>
             </div>
           </div>
-          <div className="stats-grid compact">
-            <div className="stat-card">
-              <strong>{data.stats.currentStreak}</strong>
-              <span>Current streak</span>
-            </div>
-            <div className="stat-card">
-              <strong>{data.stats.bestStreak}</strong>
-              <span>Best streak</span>
-            </div>
-            <div className="stat-card">
-              <strong>{data.stats.totalQuantity}</strong>
-              <span>Total quantity</span>
-            </div>
-            <div className="stat-card">
-              <strong>${data.stats.totalCost.toFixed(2)}</strong>
-              <span>Total cost</span>
-            </div>
+          <div className="habit-metrics" style={{ marginTop: '1rem' }}>
+            <span>Today quantity: {data.stats.currentQuantity} {data.habit.unit ?? 'times'}</span>
+            {data.analytics.progress.text ? <span>Today progress: {data.analytics.progress.text}</span> : null}
+            <span>Entries logged: {data.stats.totalEntries}</span>
+            <span>Total cost: ${data.stats.totalCost.toFixed(2)}</span>
           </div>
         </div>
       </div>
 
+      <MetricCards title="Logging snapshot" cards={topCards} />
+
       <form className="card form-grid" onSubmit={handleSubmit}>
         <div>
           <h2>Log an entry</h2>
-          <p className="muted">You can overwrite the same day if you want a cleaner daily record.</p>
+          <p className="muted">Cost override is per entry, so you can adjust individual logs without changing the habit defaults.</p>
         </div>
         <label>
           Quantity
@@ -152,6 +179,38 @@ export function HabitDetail({ habitId }: { habitId: string }) {
           )}
         </div>
       </div>
+
+      <MonthCalendar
+        title={calendarTitle}
+        monthLabel={data.analytics.monthLabel}
+        days={data.analytics.calendar}
+        ringColor={data.habit.color ?? '#6366f1'}
+      />
+
+      <ProgressRows
+        title={`Habit completion — ${data.analytics.monthLabel}`}
+        rows={data.analytics.monthlyBreakdown.map((row) => ({ ...row, color: data.habit.color }))}
+      />
+
+      <Heatmap title="Activity heatmap" subtitle="Last 10 weeks" weeks={data.analytics.heatmap} />
+
+      <BestWorstDays
+        title="Best & worst days"
+        items={[
+          {
+            habitName: data.habit.name,
+            bestDay: data.analytics.calendar.reduce((best, day) => (day.completionPercent > best.completionPercent ? day : best), data.analytics.calendar[0])?.date
+              ? new Date(`${data.analytics.calendar.reduce((best, day) => (day.completionPercent > best.completionPercent ? day : best), data.analytics.calendar[0]).date}T00:00:00Z`).toLocaleDateString('en-US', { weekday: 'short', timeZone: 'UTC' })
+              : '—',
+            bestValue: data.analytics.calendar.reduce((best, day) => Math.max(best, day.completionPercent), 0),
+            worstDay: data.analytics.calendar.reduce((worst, day) => (day.completionPercent < worst.completionPercent ? day : worst), data.analytics.calendar[0])?.date
+              ? new Date(`${data.analytics.calendar.reduce((worst, day) => (day.completionPercent < worst.completionPercent ? day : worst), data.analytics.calendar[0]).date}T00:00:00Z`).toLocaleDateString('en-US', { weekday: 'short', timeZone: 'UTC' })
+              : '—',
+            worstValue: data.analytics.calendar.reduce((worst, day) => Math.min(worst, day.completionPercent), 100),
+            color: data.habit.color,
+          },
+        ]}
+      />
     </section>
   );
 }

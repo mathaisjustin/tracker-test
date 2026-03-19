@@ -1,3 +1,14 @@
+export type HabitEntry = {
+  id: string;
+  habit_id: string;
+  user_id: string;
+  quantity: number | null;
+  cost: number | null;
+  note: string | null;
+  created_at: string | null;
+  entry_date: string;
+};
+
 export type Habit = {
   id: string;
   user_id: string;
@@ -13,15 +24,14 @@ export type Habit = {
   current_streak: number | null;
   best_streak: number | null;
   last_entry_date: string | null;
-};
-
-export type HabitEntry = {
-  id: string;
-  habit_id: string;
-  user_id: string;
-  quantity: number | null;
-  cost: number | null;
-  note: string | null;
-  created_at: string | null;
-  entry_date: string;
+  todayEntry?: HabitEntry | null;
+  todayQuantity?: number;
+  todayCost?: number;
+  progress?: {
+    current: number;
+    limit: number | null;
+    percentage: number | null;
+    text: string | null;
+    goalMet: boolean;
+  };
 };

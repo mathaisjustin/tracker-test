@@ -7,6 +7,7 @@ import { Habit } from '@/lib/types';
 
 type HabitsResponse = {
   habits: Habit[];
+  today: string;
 };
 
 export function HabitList() {
@@ -68,7 +69,7 @@ export function HabitList() {
       <div className="page-heading">
         <div>
           <h1>Your habits</h1>
-          <p className="muted">Tap +1 for today, or open a habit for deeper stats and notes.</p>
+          <p className="muted">Track today&apos;s progress, log quickly, and open any habit for deeper analytics.</p>
         </div>
         <Link href="/habits/new" className="button-link">
           Create habit
@@ -85,26 +86,30 @@ export function HabitList() {
             <div className="card habit-card" key={habit.id}>
               <Link href={`/habits/${habit.id}`} className="habit-card__link">
                 <div className="habit-card__title-row">
-                  <span className="habit-dot" style={{ backgroundColor: habit.color ?? '#6366f1' }} />
-                  <div>
-                    <h2>{habit.name}</h2>
-                    <p className="muted">
-                      {habit.type === 'good' ? 'Build it up' : 'Keep it low'} · {habit.unit ?? 'times'}
-                    </p>
+                  <div className="habit-card__title-row">
+                    <span className="habit-dot" style={{ backgroundColor: habit.color ?? '#6366f1' }} />
+                    <div>
+                      <h2>{habit.name}</h2>
+                      <p className="muted">
+                        {habit.type === 'good' ? 'Build it up' : 'Keep it low'} · {habit.unit ?? 'times'}
+                      </p>
+                    </div>
                   </div>
                 </div>
                 <div className="habit-metrics">
+                  <span>Today: {habit.todayQuantity ?? 0} {habit.unit ?? 'times'}</span>
                   <span>Current streak: {habit.current_streak ?? 0}</span>
                   <span>Best streak: {habit.best_streak ?? 0}</span>
-                  <span>Daily limit: {habit.daily_limit ?? '—'}</span>
+                  <span>Today cost: ${Number(habit.todayCost ?? 0).toFixed(2)}</span>
+                  {habit.progress?.text ? <span>Progress: {habit.progress.text}</span> : null}
                 </div>
               </Link>
               <div className="habit-actions">
                 <button type="button" onClick={() => logHabit(habit.id)} disabled={busyId === habit.id}>
-                  +1 entry
+                  {busyId === habit.id ? 'Logging...' : '+1 entry'}
                 </button>
                 <button type="button" className="ghost danger" onClick={() => deleteHabit(habit.id)} disabled={busyId === habit.id}>
-                  Delete
+                  Delete forever
                 </button>
               </div>
             </div>
